@@ -3,20 +3,25 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use clap::Parser;
 mod cli;
 use cli::{Cli, Commands};
+mod crypto;
 mod models;
-
 mod vault;
+use argon2::password_hash::rand_core::OsRng;
+use argon2::password_hash::SaltString;
+use base64::{engine::general_purpose, Engine as _};
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Create { name } => {
             // Create vault directory
-            if let Err(e) = vault::create_vault_dir(&name) {
-                eprintln!("Error: {}", e);
-                return;
-            }
+            vault::create_vault_dir(&name)?;
+
+            let salt = SaltString::generate(&mut OsRng);
+            let salt_base64 = general_purpose::STANDARD.encode(salt.as_ref());
+
+            let _password = rpassword::prompt_password("Enter master password: ")?;
 
             // getting timestamp for metadata
             let timestamp = SystemTime::now()
@@ -29,37 +34,22 @@ fn main() {
                 name: name.clone(),
                 created_at: timestamp,
                 updated_at: timestamp,
+                salt: salt_base64,
             };
 
             // saving vault
-            if let Err(e) = vault::save_vault(&vault) {
-                eprintln!("Error: {}", e);
-                return;
-            }
-
+            vault::save_vault(&vault)?;
             // creating empty secrets.json
             let empty_secrets = std::collections::HashMap::new();
-            if let Err(e) = vault::save_secret(&name, &empty_secrets) {
-                eprintln!("Error: {}", e);
-                return;
-            }
+            vault::save_secret(&name, &empty_secrets)?;
 
             println!("Vault '{}' created successfully", name);
         }
 
         Commands::Set { vault, key, value } => {
-            let mut secrets = match vault::load_secret(&vault) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("Error: {}", e);
-                    return;
-                }
-            };
+            let mut secrets = vault::load_secret(&vault)?;
 
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs() as i64;
+            let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64;
 
             let secret = models::Secret {
                 key: key.clone(),
@@ -70,21 +60,11 @@ fn main() {
             //insert into hashmap
             secrets.insert(key.clone(), secret);
 
-            match vault::save_secret(&vault, &secrets) {
-                Ok(_) => println!("Secret: '{}' saved to vault '{}", key, vault),
-                Err(e) => eprintln!("Error: {}", e),
-            }
+            vault::save_secret(&vault, &secrets)?;
         }
         //loadng the secrets from the vault
         Commands::Get { vault, key } => {
-            let secrets = match vault::load_secret(&vault) {
-                Ok(s) => s,
-                Err(e) => {
-                    println!("error: {}", e);
-
-                    return;
-                }
-            };
+            let secrets = vault::load_secret(&vault)?;
 
             match secrets.get(&key) {
                 Some(secret) => println!("{}", secret.value),
@@ -96,4 +76,6 @@ fn main() {
             println!("Deleting {} from vault {}", key, vault);
         }
     }
+
+    Ok(())
 }
