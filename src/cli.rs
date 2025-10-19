@@ -12,7 +12,7 @@ pub struct Cli {
 pub enum Commands {
     Create {
         //name of the vault
-        name: Option<String>,
+        name: String,
     },
 
     Set {

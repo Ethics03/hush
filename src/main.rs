@@ -1,36 +1,95 @@
+use std::time::{SystemTime, UNIX_EPOCH};
+
 use clap::Parser;
 mod cli;
 use cli::{Cli, Commands};
 mod models;
 
-use crate::vault::get_vault_dir;
 mod vault;
 
 fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Create { name } => match get_vault_dir() {
-            Ok(home_vault_path) => {
-                let vault_name = name.clone().unwrap_or_else(|| "default".to_string());
-                let vault_path = home_vault_path.join(&vault_name);
-
-                if !vault_path.exists() {
-                    std::fs::create_dir_all(&vault_path)
-                        .expect("Failed to create named vault folder");
-                    println!("Vault '{}' created at {:?}", vault_name, vault_path);
-                } else {
-                    println!("Vault '{}' already exists at {:?}", vault_name, vault_path);
-                }
+        Commands::Create { name } => {
+            // Create vault directory
+            if let Err(e) = vault::create_vault_dir(&name) {
+                eprintln!("Error: {}", e);
+                return;
             }
-            Err(err) => eprintln!("Error accessing home vault: {}", err),
-        },
-        Commands::Set { vault, key, value } => {
-            println!("setting {}={} in vault {}", key, value, vault);
+
+            // getting timestamp for metadata
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64;
+
+            // creating vault metadata
+            let vault = models::Vault {
+                name: name.clone(),
+                created_at: timestamp,
+                updated_at: timestamp,
+            };
+
+            // saving vault
+            if let Err(e) = vault::save_vault(&vault) {
+                eprintln!("Error: {}", e);
+                return;
+            }
+
+            // creating empty secrets.json
+            let empty_secrets = std::collections::HashMap::new();
+            if let Err(e) = vault::save_secret(&name, &empty_secrets) {
+                eprintln!("Error: {}", e);
+                return;
+            }
+
+            println!("Vault '{}' created successfully", name);
         }
 
+        Commands::Set { vault, key, value } => {
+            let mut secrets = match vault::load_secret(&vault) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    return;
+                }
+            };
+
+            let timestamp = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as i64;
+
+            let secret = models::Secret {
+                key: key.clone(),
+                value: value.clone(),
+                created_at: timestamp,
+            };
+
+            //insert into hashmap
+            secrets.insert(key.clone(), secret);
+
+            match vault::save_secret(&vault, &secrets) {
+                Ok(_) => println!("Secret: '{}' saved to vault '{}", key, vault),
+                Err(e) => eprintln!("Error: {}", e),
+            }
+        }
+        //loadng the secrets from the vault
         Commands::Get { vault, key } => {
-            println!("Getting {} from vault {}", key, vault);
+            let secrets = match vault::load_secret(&vault) {
+                Ok(s) => s,
+                Err(e) => {
+                    println!("error: {}", e);
+
+                    return;
+                }
+            };
+
+            match secrets.get(&key) {
+                Some(secret) => println!("{}", secret.value),
+                None => eprintln!("error: secret '{}'  not found in vault '{}'", key, vault),
+            }
         }
 
         Commands::Delete { vault, key } => {
