@@ -19,7 +19,7 @@ A secure, encrypted password manager built with Rust.
 
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/Ethics03/hush.git
 cd hush
 cargo build --release
 sudo cp target/release/hush /usr/local/bin/
