@@ -17,8 +17,8 @@ const ASCII_ART: &str = r#"
 #[derive(Parser)]
 #[command(name = "hush")]
 #[command(version = "1.0.0")]
-#[command(about = format!("{}\nA secure and encrypted secret/password manager CLI",ASCII_ART),long_about = None)]
-#[command(author = "Rachit Srivastava")]
+#[command(about = format!("{}\nA secure and encrypted secret/password manager CLI\n\nGithub: https://github.com/Ethics03/hush",ASCII_ART),long_about = None)]
+#[command(author = "Rachit Srivastava <hello@rachitt.dev>")]
 #[command(styles = get_styles())]
 pub struct Cli {
     #[command(subcommand)]
