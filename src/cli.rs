@@ -1,4 +1,4 @@
-use clap::{ColorChoice, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 
 const ASCII_ART: &str = r#"
  ██░ ██  █    ██   ██████  ██░ ██ 
