@@ -9,4 +9,6 @@ pub struct Vault {
     pub updated_at: i64,
 
     pub salt: String,
+
+    pub nonce: Option<String>,
 }
