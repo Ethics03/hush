@@ -108,3 +108,11 @@ pub fn list_vaults() -> Result<Vec<String>> {
 
     Ok(vaults)
 }
+
+pub fn delete_vault(vault_name: &str) -> Result<()> {
+    let vault_path = get_vault_path(&vault_name)?;
+
+    fs::remove_dir_all(&vault_path).context("Failed to delete vault directory")?;
+
+    Ok(())
+}

@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.100"
+arboard = { version = "3.6.1", features = ["wl-clipboard-rs"] }
 argon2 = "0.5.3"
 base64 = "0.22.1"
 chacha20poly1305 = { version = "0.10.1", features = ["std"] }
