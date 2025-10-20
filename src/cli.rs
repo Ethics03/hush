@@ -42,4 +42,6 @@ pub enum Commands {
         #[arg(short, long)]
         key: String,
     },
+
+    List,
 }
