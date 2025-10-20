@@ -2,6 +2,10 @@
 
 A secure, encrypted password manager built with Rust.
 
+
+![Hush Demo](public/hushdemo.gif)
+
+
 ## Features
 
 - **Military-grade encryption** - ChaCha20-Poly1305 AEAD
