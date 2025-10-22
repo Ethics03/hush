@@ -126,7 +126,7 @@ pub fn get_secret(vault_name: &str, key: &str) -> Result<()> {
                         println!("Paste it anywhere you need to!");
 
                         //this is for linux clipboard guy closed too fast
-                        thread::sleep(Duration::from_millis(100));
+                        thread::sleep(Duration::from_millis(300));
                     }
                     Err(_) => {
                         println!("Clipboard unavailable. Here's your secret: ");
