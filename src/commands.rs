@@ -12,8 +12,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::{crypto, models, vault};
 
 pub fn create_vault(name: &str) -> Result<()> {
-    vault::create_vault_dir(name)?;
-
     let salt = SaltString::generate(&mut OsRng);
     let salt_base64 = general_purpose::STANDARD.encode(salt.as_ref());
 
@@ -38,6 +36,8 @@ pub fn create_vault(name: &str) -> Result<()> {
             }
         }
     };
+
+    vault::create_vault_dir(name)?;
 
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs() as i64;
 
